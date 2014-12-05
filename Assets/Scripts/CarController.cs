@@ -7,7 +7,11 @@ public class CarController : MonoBehaviour {
 	public WheelCollider wheelFR;
 	public WheelCollider wheelRL;
 	public WheelCollider wheelRR;
-
+	
+	public Transform wheelFLTransform;
+	public Transform wheelFRTransform;
+	public Transform wheelRLTransform;
+	public Transform wheelRRTransform;
 
 	public float maxTorque = 50f;
 	public float maxSteerAngle = 15f;
@@ -28,5 +32,13 @@ public class CarController : MonoBehaviour {
 		wheelFL.steerAngle = maxSteerAngle * Input.GetAxis("Horizontal");
 		wheelFR.steerAngle = maxSteerAngle * Input.GetAxis("Horizontal");
 
+	}
+
+
+	void Update(){
+		wheelFLTransform.Rotate(wheelFL.rpm / 60*360*Time.deltaTime, 0, 0);
+		wheelFRTransform.Rotate(wheelFR.rpm / 60*360*Time.deltaTime, 0, 0);
+		wheelRLTransform.Rotate(wheelRL.rpm / 60*360*Time.deltaTime, 0, 0);
+		wheelRRTransform.Rotate(wheelRR.rpm / 60*360*Time.deltaTime, 0, 0);
 	}
 }
