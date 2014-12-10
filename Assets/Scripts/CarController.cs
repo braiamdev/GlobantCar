@@ -15,12 +15,14 @@ public class CarController : MonoBehaviour {
 
 	public float maxTorque = 50f;
 	public Vector3 centerOfMassOffset = new Vector3(0f,-0.9f, 0f);
-	public float topSpeed = 50;
+	public float lowestSteerAtSpeed = 50; //the speed at witch highSpeedSteerAngle will be reached
 	public float lowSpeedSteerAngle = 15;
 	public float highSpeedSteerAngle = 1;
 
 	public float decelerationSpeed = 30;
 
+	public float currentSpeed;
+	public float topSpeed = 150;
 
 	void Start () {
 		rigidbody.centerOfMass = new Vector3(
@@ -36,11 +38,14 @@ public class CarController : MonoBehaviour {
 
 
 	void Update(){
+		//Rotating wheel transform according to wheel collider physics
 		wheelFLTransform.Rotate(wheelFL.rpm / 60*360*Time.deltaTime, 0, 0);
 		wheelFRTransform.Rotate(wheelFR.rpm / 60*360*Time.deltaTime, 0, 0);
 		wheelRLTransform.Rotate(wheelRL.rpm / 60*360*Time.deltaTime, 0, 0);
 		wheelRRTransform.Rotate(wheelRR.rpm / 60*360*Time.deltaTime, 0, 0);
 
+
+		//Steering (Visual)
 		Vector3 temp = wheelFLTransform.localEulerAngles;
 		temp.y = wheelFL.steerAngle - wheelFLTransform.localEulerAngles.z;
 		wheelFLTransform.localEulerAngles = temp;
@@ -55,10 +60,21 @@ public class CarController : MonoBehaviour {
 
 	void Control(){
 		float steerInput = Input.GetAxis("Horizontal");
-		
-		wheelRR.motorTorque = maxTorque * Input.GetAxis("Vertical");
-		wheelRL.motorTorque = maxTorque * Input.GetAxis("Vertical");
-		
+	
+
+		currentSpeed = Mathf.Round(2.0f * Mathf.PI * wheelFL.radius * wheelFL.rpm * 60 / 1000);
+
+		//Adding motor torque
+		if(currentSpeed <= topSpeed){
+			wheelRR.motorTorque = maxTorque * Input.GetAxis("Vertical");
+			wheelRL.motorTorque = maxTorque * Input.GetAxis("Vertical");
+		} else {
+			
+			wheelRR.motorTorque = 0;
+			wheelRL.motorTorque = 0;
+		}
+
+		//Drag deceleration
 		if(!Input.GetButton("Vertical")){
 			wheelRR.brakeTorque = decelerationSpeed;
 			wheelRL.brakeTorque = decelerationSpeed;
@@ -66,8 +82,9 @@ public class CarController : MonoBehaviour {
 			wheelRR.brakeTorque = 0;
 			wheelRL.brakeTorque = 0;
 		}
-		
-		float speedFactor = rigidbody.velocity.magnitude / topSpeed;
+
+		//Steering (pyhiscs)
+		float speedFactor = rigidbody.velocity.magnitude / lowestSteerAtSpeed;
 		float steerAngle = Mathf.Lerp(lowSpeedSteerAngle, highSpeedSteerAngle, speedFactor) * steerInput;
 		wheelFL.steerAngle = steerAngle;
 		wheelFR.steerAngle = steerAngle;
