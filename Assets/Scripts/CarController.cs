@@ -21,8 +21,10 @@ public class CarController : MonoBehaviour {
 
 	public float decelerationSpeed = 30;
 
+	[HideInInspector]
 	public float currentSpeed;
 	public float topSpeed = 150;
+	public float maxReverseSpeed = 50;
 
 	void Start () {
 		rigidbody.centerOfMass = new Vector3(
@@ -55,6 +57,9 @@ public class CarController : MonoBehaviour {
 		temp.y = wheelFR.steerAngle - wheelFRTransform.localEulerAngles.z;
 		wheelFRTransform.localEulerAngles = temp;
 
+
+		WheelPosition();
+
 	}
 
 
@@ -65,7 +70,7 @@ public class CarController : MonoBehaviour {
 		currentSpeed = Mathf.Round(2.0f * Mathf.PI * wheelFL.radius * wheelFL.rpm * 60 / 1000);
 
 		//Adding motor torque
-		if(currentSpeed <= topSpeed){
+		if(currentSpeed >= -maxReverseSpeed && currentSpeed <= topSpeed){
 			wheelRR.motorTorque = maxTorque * Input.GetAxis("Vertical");
 			wheelRL.motorTorque = maxTorque * Input.GetAxis("Vertical");
 		} else {
@@ -88,5 +93,53 @@ public class CarController : MonoBehaviour {
 		float steerAngle = Mathf.Lerp(lowSpeedSteerAngle, highSpeedSteerAngle, speedFactor) * steerInput;
 		wheelFL.steerAngle = steerAngle;
 		wheelFR.steerAngle = steerAngle;
+	}
+
+
+	private void WheelPosition(){
+		RaycastHit hit;
+		Vector3 wheelPos;
+
+		//FL
+		if(Physics.Raycast(wheelFL.transform.position, -wheelFL.transform.up, out hit, wheelFL.radius + wheelFL.suspensionDistance)){
+			wheelPos = hit.point + wheelFL.transform.up * wheelFL.radius;
+		} else {
+			wheelPos = wheelFL.transform.position - wheelFL.transform.up * wheelFL.suspensionDistance;
+		}
+
+		wheelFLTransform.position = wheelPos;
+
+
+		//FR
+		if(Physics.Raycast(wheelFR.transform.position, -wheelFR.transform.up, out hit, wheelFR.radius + wheelFR.suspensionDistance)){
+			wheelPos = hit.point + wheelFR.transform.up * wheelFR.radius;
+		} else {
+			wheelPos = wheelFR.transform.position - wheelFR.transform.up * wheelFR.suspensionDistance;
+		}
+		
+		wheelFRTransform.position = wheelPos;
+
+
+		//RL
+		if(Physics.Raycast(wheelRL.transform.position, -wheelRL.transform.up, out hit, wheelRL.radius + wheelRL.suspensionDistance)){
+			wheelPos = hit.point + wheelRL.transform.up * wheelRL.radius;
+		} else {
+			wheelPos = wheelRL.transform.position - wheelRL.transform.up * wheelRL.suspensionDistance;
+		}
+		
+		wheelRLTransform.position = wheelPos;
+
+
+
+		//RR
+		if(Physics.Raycast(wheelRR.transform.position, -wheelRR.transform.up, out hit, wheelRR.radius + wheelRR.suspensionDistance)){
+			wheelPos = hit.point + wheelRR.transform.up * wheelRR.radius;
+		} else {
+			wheelPos = wheelRR.transform.position - wheelRR.transform.up * wheelRR.suspensionDistance;
+		}
+		
+		wheelRRTransform.position = wheelPos;
+	
+
 	}
 }
