@@ -26,6 +26,11 @@ public class CarController : MonoBehaviour {
 	public float topSpeed = 150;
 	public float maxReverseSpeed = 50;
 
+
+	public bool braked = false;
+	public float maxBrakeTorque =  100;
+
+
 	void Start () {
 		rigidbody.centerOfMass = new Vector3(
 			rigidbody.centerOfMass.x + centerOfMassOffset.x,
@@ -36,6 +41,7 @@ public class CarController : MonoBehaviour {
 
 	void FixedUpdate () {
 		Control();
+		HandBrake();
 	}
 
 
@@ -141,5 +147,21 @@ public class CarController : MonoBehaviour {
 		wheelRRTransform.position = wheelPos;
 	
 
+	}
+
+
+	public void HandBrake(){
+		if(Input.GetButton("Jump")){
+			braked = true;
+		} else {
+			braked = false;
+		}
+
+		if(braked){
+			wheelRR.brakeTorque = maxBrakeTorque;
+			wheelRL.brakeTorque = maxBrakeTorque;
+			wheelFL.motorTorque = 0;
+			wheelFR.motorTorque = 0;
+		}
 	}
 }
