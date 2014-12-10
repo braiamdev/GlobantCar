@@ -19,6 +19,8 @@ public class CarController : MonoBehaviour {
 	public float lowSpeedSteerAngle = 15;
 	public float highSpeedSteerAngle = 1;
 
+	public float decelerationSpeed = 30;
+
 
 	void Start () {
 		rigidbody.centerOfMass = new Vector3(
@@ -29,16 +31,7 @@ public class CarController : MonoBehaviour {
 	}
 
 	void FixedUpdate () {
-		float steerInput = Input.GetAxis("Horizontal");
-
-		wheelRR.motorTorque = maxTorque * Input.GetAxis("Vertical");
-		wheelRL.motorTorque = maxTorque * Input.GetAxis("Vertical");
-
-		float speedFactor = rigidbody.velocity.magnitude / topSpeed;
-		float steerAngle = Mathf.Lerp(lowSpeedSteerAngle, highSpeedSteerAngle, speedFactor) * steerInput;
-		wheelFL.steerAngle = steerAngle;
-		wheelFR.steerAngle = steerAngle;
-
+		Control();
 	}
 
 
@@ -57,5 +50,26 @@ public class CarController : MonoBehaviour {
 		temp.y = wheelFR.steerAngle - wheelFRTransform.localEulerAngles.z;
 		wheelFRTransform.localEulerAngles = temp;
 
+	}
+
+
+	void Control(){
+		float steerInput = Input.GetAxis("Horizontal");
+		
+		wheelRR.motorTorque = maxTorque * Input.GetAxis("Vertical");
+		wheelRL.motorTorque = maxTorque * Input.GetAxis("Vertical");
+		
+		if(!Input.GetButton("Vertical")){
+			wheelRR.brakeTorque = decelerationSpeed;
+			wheelRL.brakeTorque = decelerationSpeed;
+		} else {
+			wheelRR.brakeTorque = 0;
+			wheelRL.brakeTorque = 0;
+		}
+		
+		float speedFactor = rigidbody.velocity.magnitude / topSpeed;
+		float steerAngle = Mathf.Lerp(lowSpeedSteerAngle, highSpeedSteerAngle, speedFactor) * steerInput;
+		wheelFL.steerAngle = steerAngle;
+		wheelFR.steerAngle = steerAngle;
 	}
 }
