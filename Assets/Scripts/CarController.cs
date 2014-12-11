@@ -43,8 +43,11 @@ public class CarController : MonoBehaviour {
 
 
 	//State vars
-	private bool braked = false;
 	private float currentSpeed;
+
+	private float inputAcceleration = 0;
+	private float inputSteering = 0;
+	private bool isHandBraking = false;
 
 
 	public Texture2D speedOMeterDial;
@@ -67,8 +70,7 @@ public class CarController : MonoBehaviour {
 	}
 
 	void FixedUpdate () {
-		Control();
-		HandBrake();
+		UpdatePhysics();
 	}
 
 
@@ -77,20 +79,20 @@ public class CarController : MonoBehaviour {
 	}
 
 
-	void Control(){
-		float steerInput = Input.GetAxis("Horizontal");
-	
+	void UpdatePhysics(){
 
 		currentSpeed = Mathf.Round(2.0f * Mathf.PI * wheelColliderFL.radius * wheelColliderFL.rpm * 60 / 1000);
 
 		//Adding motor torque
 		if(currentSpeed >= -topReverseSpeed && currentSpeed <= topForwardSpeed){
-			wheelColliderRR.motorTorque = maxAccelTorque * Input.GetAxis("Vertical");
-			wheelColliderRL.motorTorque = maxAccelTorque * Input.GetAxis("Vertical");
+			ApplyToFrontWheels((wheelTransform, wheelCollider) => {
+				wheelCollider.motorTorque = maxAccelTorque * this.inputAcceleration;
+			});
+
 		} else {
-			
-			wheelColliderRR.motorTorque = 0;
-			wheelColliderRL.motorTorque = 0;
+			ApplyToRearWheels((wheelTransform, wheelCollider) => {
+				wheelCollider.motorTorque = 0;
+			});
 		}
 
 		//Drag deceleration
@@ -104,28 +106,20 @@ public class CarController : MonoBehaviour {
 
 		//Steering (pyhiscs)
 		float speedFactor = rigidbody.velocity.magnitude / lowestSteerAtSpeed;
-		float steerAngle = Mathf.Lerp(lowSpeedSteerAngle, highSpeedSteerAngle, speedFactor) * steerInput;
+		float steerAngle = Mathf.Lerp(lowSpeedSteerAngle, highSpeedSteerAngle, speedFactor) * this.inputSteering;
 		wheelColliderFL.steerAngle = steerAngle;
 		wheelColliderFR.steerAngle = steerAngle;
-	}
 
-
-
-
-	public void HandBrake(){
-		if(Input.GetButton("Jump")){
-			braked = true;
-		} else {
-			braked = false;
-		}
-
-		if(braked){
-			wheelColliderRR.brakeTorque = maxBrakeTorque;
-			wheelColliderRL.brakeTorque = maxBrakeTorque;
-			wheelColliderFL.motorTorque = 0;
-			wheelColliderFR.motorTorque = 0;
+		//Handbrake
+		if(isHandBraking){
+			ApplyToFrontWheels((wheelTransform, wheelCollider) => { wheelCollider.motorTorque = 0; });
+			ApplyToRearWheels((wheelTransform, wheelCollider) => {wheelCollider.brakeTorque = maxBrakeTorque; });
 		}
 	}
+
+
+
+
 
 
 	void OnGUI(){
@@ -169,6 +163,22 @@ public class CarController : MonoBehaviour {
 	}
 
 
+	//
+	// Public API
+	//
+
+	public void ApplyAcceleration(float acceleration){
+		this.inputAcceleration = acceleration;
+	}
+
+
+	public void ApplySteering(float steering){
+		this.inputSteering = steering;
+	}
+
+	public void SetHandbrake(bool handBrake){
+		this.isHandBraking = handBrake;
+	}
 	
 	//
 	// Delegate Methods
