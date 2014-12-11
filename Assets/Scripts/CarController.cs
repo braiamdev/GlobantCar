@@ -1,35 +1,62 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class CarController : MonoBehaviour {
 
-	public WheelCollider wheelFL;
-	public WheelCollider wheelFR;
-	public WheelCollider wheelRL;
-	public WheelCollider wheelRR;
-	
-	public Transform wheelFLTransform;
-	public Transform wheelFRTransform;
-	public Transform wheelRLTransform;
-	public Transform wheelRRTransform;
+	//Wheel collider game objects
+	public WheelCollider wheelColliderFL;
+	public WheelCollider wheelColliderFR;
+	public WheelCollider wheelColliderRL;
+	public WheelCollider wheelColliderRR;
 
-	public float maxTorque = 50f;
+	//Wheel Transform game objects
+	public Transform wheelTransformFL;
+	public Transform wheelTransformFR;
+	public Transform wheelTransformRL;
+	public Transform wheelTransformRR;
+
+
+	//Max torque
+	public float maxAccelTorque = 50f;
+	public float maxBrakeTorque =  100f;
+
+
+	//Physics
 	public Vector3 centerOfMassOffset = new Vector3(0f,-0.9f, 0f);
+	public float decelerationSpeed = 30;
+
+
+	//Steering
 	public float lowestSteerAtSpeed = 50; //the speed at witch highSpeedSteerAngle will be reached
 	public float lowSpeedSteerAngle = 15;
 	public float highSpeedSteerAngle = 1;
 
-	public float decelerationSpeed = 30;
-
-	[HideInInspector]
-	public float currentSpeed;
-	public float topSpeed = 150;
-	public float maxReverseSpeed = 50;
 
 
-	public bool braked = false;
-	public float maxBrakeTorque =  100;
 
+	//Max speeds
+	public float topForwardSpeed = 150;
+	public float topReverseSpeed = 50;
+
+
+
+
+	//State vars
+	private bool braked = false;
+	private float currentSpeed;
+
+
+	public Texture2D speedOMeterDial;
+	public Texture2D speedOMeterPointer;
+
+
+	private delegate void WheelsFunction(Transform wheelTransform, WheelCollider wheelCollider);
+
+
+	//
+	// Monobehaviour Overrides
+	//
 
 	void Start () {
 		rigidbody.centerOfMass = new Vector3(
@@ -46,26 +73,7 @@ public class CarController : MonoBehaviour {
 
 
 	void Update(){
-		//Rotating wheel transform according to wheel collider physics
-		wheelFLTransform.Rotate(wheelFL.rpm / 60*360*Time.deltaTime, 0, 0);
-		wheelFRTransform.Rotate(wheelFR.rpm / 60*360*Time.deltaTime, 0, 0);
-		wheelRLTransform.Rotate(wheelRL.rpm / 60*360*Time.deltaTime, 0, 0);
-		wheelRRTransform.Rotate(wheelRR.rpm / 60*360*Time.deltaTime, 0, 0);
-
-
-		//Steering (Visual)
-		Vector3 temp = wheelFLTransform.localEulerAngles;
-		temp.y = wheelFL.steerAngle - wheelFLTransform.localEulerAngles.z;
-		wheelFLTransform.localEulerAngles = temp;
-
-
-		temp = wheelFRTransform.localEulerAngles;
-		temp.y = wheelFR.steerAngle - wheelFRTransform.localEulerAngles.z;
-		wheelFRTransform.localEulerAngles = temp;
-
-
-		WheelPosition();
-
+		SyncWheelTransformsToColliderProperties();
 	}
 
 
@@ -73,81 +81,35 @@ public class CarController : MonoBehaviour {
 		float steerInput = Input.GetAxis("Horizontal");
 	
 
-		currentSpeed = Mathf.Round(2.0f * Mathf.PI * wheelFL.radius * wheelFL.rpm * 60 / 1000);
+		currentSpeed = Mathf.Round(2.0f * Mathf.PI * wheelColliderFL.radius * wheelColliderFL.rpm * 60 / 1000);
 
 		//Adding motor torque
-		if(currentSpeed >= -maxReverseSpeed && currentSpeed <= topSpeed){
-			wheelRR.motorTorque = maxTorque * Input.GetAxis("Vertical");
-			wheelRL.motorTorque = maxTorque * Input.GetAxis("Vertical");
+		if(currentSpeed >= -topReverseSpeed && currentSpeed <= topForwardSpeed){
+			wheelColliderRR.motorTorque = maxAccelTorque * Input.GetAxis("Vertical");
+			wheelColliderRL.motorTorque = maxAccelTorque * Input.GetAxis("Vertical");
 		} else {
 			
-			wheelRR.motorTorque = 0;
-			wheelRL.motorTorque = 0;
+			wheelColliderRR.motorTorque = 0;
+			wheelColliderRL.motorTorque = 0;
 		}
 
 		//Drag deceleration
 		if(!Input.GetButton("Vertical")){
-			wheelRR.brakeTorque = decelerationSpeed;
-			wheelRL.brakeTorque = decelerationSpeed;
+			wheelColliderRR.brakeTorque = decelerationSpeed;
+			wheelColliderRL.brakeTorque = decelerationSpeed;
 		} else {
-			wheelRR.brakeTorque = 0;
-			wheelRL.brakeTorque = 0;
+			wheelColliderRR.brakeTorque = 0;
+			wheelColliderRL.brakeTorque = 0;
 		}
 
 		//Steering (pyhiscs)
 		float speedFactor = rigidbody.velocity.magnitude / lowestSteerAtSpeed;
 		float steerAngle = Mathf.Lerp(lowSpeedSteerAngle, highSpeedSteerAngle, speedFactor) * steerInput;
-		wheelFL.steerAngle = steerAngle;
-		wheelFR.steerAngle = steerAngle;
+		wheelColliderFL.steerAngle = steerAngle;
+		wheelColliderFR.steerAngle = steerAngle;
 	}
 
 
-	private void WheelPosition(){
-		RaycastHit hit;
-		Vector3 wheelPos;
-
-		//FL
-		if(Physics.Raycast(wheelFL.transform.position, -wheelFL.transform.up, out hit, wheelFL.radius + wheelFL.suspensionDistance)){
-			wheelPos = hit.point + wheelFL.transform.up * wheelFL.radius;
-		} else {
-			wheelPos = wheelFL.transform.position - wheelFL.transform.up * wheelFL.suspensionDistance;
-		}
-
-		wheelFLTransform.position = wheelPos;
-
-
-		//FR
-		if(Physics.Raycast(wheelFR.transform.position, -wheelFR.transform.up, out hit, wheelFR.radius + wheelFR.suspensionDistance)){
-			wheelPos = hit.point + wheelFR.transform.up * wheelFR.radius;
-		} else {
-			wheelPos = wheelFR.transform.position - wheelFR.transform.up * wheelFR.suspensionDistance;
-		}
-		
-		wheelFRTransform.position = wheelPos;
-
-
-		//RL
-		if(Physics.Raycast(wheelRL.transform.position, -wheelRL.transform.up, out hit, wheelRL.radius + wheelRL.suspensionDistance)){
-			wheelPos = hit.point + wheelRL.transform.up * wheelRL.radius;
-		} else {
-			wheelPos = wheelRL.transform.position - wheelRL.transform.up * wheelRL.suspensionDistance;
-		}
-		
-		wheelRLTransform.position = wheelPos;
-
-
-
-		//RR
-		if(Physics.Raycast(wheelRR.transform.position, -wheelRR.transform.up, out hit, wheelRR.radius + wheelRR.suspensionDistance)){
-			wheelPos = hit.point + wheelRR.transform.up * wheelRR.radius;
-		} else {
-			wheelPos = wheelRR.transform.position - wheelRR.transform.up * wheelRR.suspensionDistance;
-		}
-		
-		wheelRRTransform.position = wheelPos;
-	
-
-	}
 
 
 	public void HandBrake(){
@@ -158,10 +120,110 @@ public class CarController : MonoBehaviour {
 		}
 
 		if(braked){
-			wheelRR.brakeTorque = maxBrakeTorque;
-			wheelRL.brakeTorque = maxBrakeTorque;
-			wheelFL.motorTorque = 0;
-			wheelFR.motorTorque = 0;
+			wheelColliderRR.brakeTorque = maxBrakeTorque;
+			wheelColliderRL.brakeTorque = maxBrakeTorque;
+			wheelColliderFL.motorTorque = 0;
+			wheelColliderFR.motorTorque = 0;
 		}
 	}
+
+
+	void OnGUI(){
+
+		//Drawing Dial
+		float dialWidth = 300;
+		float dialHeight = 150;
+
+		Rect dialRect = new Rect(
+			Screen.width - dialWidth,
+			Screen.height - dialHeight,
+			dialWidth,
+			dialHeight
+		);
+
+		GUI.DrawTexture(dialRect, speedOMeterDial);
+
+
+		//Drawing needle
+		float speedFactor = Mathf.Abs(currentSpeed / topForwardSpeed);
+
+		float rotationAngle = Mathf.Lerp(0, 180, speedFactor);
+
+		float needleWidth = 300;
+		float needleHeight = 300;
+
+		Rect needleRect = new Rect(
+			Screen.width - needleWidth,
+			Screen.height - (needleHeight / 2),
+			needleWidth,
+			needleHeight
+		);
+
+		Vector2 pivotPoint = new Vector2(
+			Screen.width - (needleWidth/2),
+			Screen.height
+		);
+		GUIUtility.RotateAroundPivot(rotationAngle, pivotPoint);
+		GUI.DrawTexture(needleRect, speedOMeterPointer);
+
+	}
+
+
+	
+	//
+	// Delegate Methods
+	//
+	private void ApplyToAllWheels(WheelsFunction f){
+		f(wheelTransformFL, wheelColliderFL);
+		f(wheelTransformFR, wheelColliderFR);
+		f(wheelTransformRL, wheelColliderRL);
+		f(wheelTransformRR, wheelColliderRR);
+	}
+	
+	private void ApplyToFrontWheels(WheelsFunction f){
+		f(wheelTransformFL, wheelColliderFL);
+		f(wheelTransformFR, wheelColliderFR);
+	}
+	
+	private void ApplyToRearWheels(WheelsFunction f){
+		f(wheelTransformRL, wheelColliderRL);
+		f(wheelTransformRR, wheelColliderRR);
+	}
+
+
+
+	/// <summary>
+	/// Syncs the wheel transforms to collider properties.
+	/// </summary>
+	private void SyncWheelTransformsToColliderProperties(){
+
+		//Rotating wheel transform according to wheel collider physics
+		ApplyToAllWheels((wheelTransform, wheelCollider) => {
+			wheelTransform.Rotate(wheelCollider.rpm / 60*360*Time.deltaTime, 0, 0);
+		});
+		
+		
+		//Steering (Visual)
+		ApplyToFrontWheels((wheelTransform, wheelCollider) => {
+			Vector3 temp = wheelTransform.localEulerAngles;
+			temp.y = wheelCollider.steerAngle - wheelTransform.localEulerAngles.z;
+			wheelTransform.localEulerAngles = temp;
+		});
+		
+		
+		//Wheel position (suspension)
+		ApplyToAllWheels((wheelTransform, wheelCollider) => {
+			RaycastHit hit;
+			Vector3 wheelPos;
+			
+			if(Physics.Raycast(wheelCollider.transform.position, - wheelCollider.transform.up, out hit, wheelCollider.radius + wheelCollider.suspensionDistance)){
+				wheelPos = hit.point + wheelCollider.transform.up * wheelCollider.radius;
+			} else {
+				wheelPos = wheelCollider.transform.position - wheelCollider.transform.up * wheelCollider.suspensionDistance;
+			}
+			
+			wheelTransform.position = wheelPos;
+		});
+	}
+
 }
