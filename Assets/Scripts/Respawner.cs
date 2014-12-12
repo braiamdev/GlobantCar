@@ -3,19 +3,35 @@ using System;
 
 public class Respawner : MonoBehaviour
 {
+	public CarController carController;
 	public GameObject respawnPoint;
 	public string triggerButtonName = "Fire1";
 
+	private bool respawning = false;
+
 	void Update(){
 		if(Input.GetButtonDown(triggerButtonName)){
-			respawn();
+			respawning = true;
 		}
 	}
 
 
 	private void respawn(){
-		gameObject.transform.position = respawnPoint.transform.position;
-		gameObject.transform.rotation = respawnPoint.transform.rotation;
+
+		carController.gameObject.transform.position = respawnPoint.transform.position;
+		carController.gameObject.transform.rotation = respawnPoint.transform.rotation;
+		carController.HardStop();
+	}
+
+
+	void FixedUpdate(){
+		if(respawning){
+			respawn();
+			//carController.rigidbody.isKinematic = false;
+			respawning = false;
+		} else {
+			//carController.rigidbody.isKinematic = true;
+		}
 	}
 }
 

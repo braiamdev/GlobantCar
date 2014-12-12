@@ -10,6 +10,7 @@ public class CarController : MonoBehaviour {
 	public WheelCollider wheelColliderRL;
 	public WheelCollider wheelColliderRR;
 
+
 	//Wheel Transform game objects
 	public Transform wheelTransformFL;
 	public Transform wheelTransformFR;
@@ -43,15 +44,11 @@ public class CarController : MonoBehaviour {
 
 
 	//State vars
-	private float currentSpeed;
+	public float currentSpeed { get; private set;}
 
 	private float inputAcceleration = 0;
 	private float inputSteering = 0;
 	private bool isHandBraking = false;
-
-
-	public Texture2D speedOMeterDial;
-	public Texture2D speedOMeterPointer;
 
 
 	private delegate void WheelsFunction(Transform wheelTransform, WheelCollider wheelCollider);
@@ -79,88 +76,7 @@ public class CarController : MonoBehaviour {
 	}
 
 
-	void UpdatePhysics(){
 
-		currentSpeed = Mathf.Round(2.0f * Mathf.PI * wheelColliderFL.radius * wheelColliderFL.rpm * 60 / 1000);
-
-		//Adding motor torque
-		if(currentSpeed >= -topReverseSpeed && currentSpeed <= topForwardSpeed){
-			ApplyToFrontWheels((wheelTransform, wheelCollider) => {
-				wheelCollider.motorTorque = maxAccelTorque * this.inputAcceleration;
-			});
-
-		} else {
-			ApplyToRearWheels((wheelTransform, wheelCollider) => {
-				wheelCollider.motorTorque = 0;
-			});
-		}
-
-		//Drag deceleration
-		if(!Input.GetButton("Vertical")){
-			wheelColliderRR.brakeTorque = decelerationSpeed;
-			wheelColliderRL.brakeTorque = decelerationSpeed;
-		} else {
-			wheelColliderRR.brakeTorque = 0;
-			wheelColliderRL.brakeTorque = 0;
-		}
-
-		//Steering (pyhiscs)
-		float speedFactor = rigidbody.velocity.magnitude / lowestSteerAtSpeed;
-		float steerAngle = Mathf.Lerp(lowSpeedSteerAngle, highSpeedSteerAngle, speedFactor) * this.inputSteering;
-		wheelColliderFL.steerAngle = steerAngle;
-		wheelColliderFR.steerAngle = steerAngle;
-
-		//Handbrake
-		if(isHandBraking){
-			ApplyToFrontWheels((wheelTransform, wheelCollider) => { wheelCollider.motorTorque = 0; });
-			ApplyToRearWheels((wheelTransform, wheelCollider) => {wheelCollider.brakeTorque = maxBrakeTorque; });
-		}
-	}
-
-
-
-
-
-
-	void OnGUI(){
-
-		//Drawing Dial
-		float dialWidth = 300;
-		float dialHeight = 150;
-
-		Rect dialRect = new Rect(
-			Screen.width - dialWidth,
-			Screen.height - dialHeight,
-			dialWidth,
-			dialHeight
-		);
-
-		GUI.DrawTexture(dialRect, speedOMeterDial);
-
-
-		//Drawing needle
-		float speedFactor = Mathf.Abs(currentSpeed / topForwardSpeed);
-
-		float rotationAngle = Mathf.Lerp(0, 180, speedFactor);
-
-		float needleWidth = 300;
-		float needleHeight = 300;
-
-		Rect needleRect = new Rect(
-			Screen.width - needleWidth,
-			Screen.height - (needleHeight / 2),
-			needleWidth,
-			needleHeight
-		);
-
-		Vector2 pivotPoint = new Vector2(
-			Screen.width - (needleWidth/2),
-			Screen.height
-		);
-		GUIUtility.RotateAroundPivot(rotationAngle, pivotPoint);
-		GUI.DrawTexture(needleRect, speedOMeterPointer);
-
-	}
 
 
 	//
@@ -178,6 +94,13 @@ public class CarController : MonoBehaviour {
 
 	public void SetHandbrake(bool handBrake){
 		this.isHandBraking = handBrake;
+	}
+
+	public void HardStop(){
+		ApplyToAllWheels((wheelTransform, wheelCollider) => {
+			wheelCollider.motorTorque = 0;
+			wheelCollider.brakeTorque = 0;
+		});
 	}
 	
 	//
@@ -202,9 +125,46 @@ public class CarController : MonoBehaviour {
 
 
 
-	/// <summary>
-	/// Syncs the wheel transforms to collider properties.
-	/// </summary>
+	private void UpdatePhysics(){
+		
+		currentSpeed = Mathf.Round(2.0f * Mathf.PI * wheelColliderFL.radius * wheelColliderFL.rpm * 60 / 1000);
+		//bool thing = currentSpeed >= -topReverseSpeed && currentSpeed <= topForwardSpeed;
+		//Debug.Log(string.Format("currentSpeed={0}; {1}", currentSpeed, thing));
+
+		//Adding motor torque
+		if(currentSpeed >= -topReverseSpeed && currentSpeed <= topForwardSpeed){
+			ApplyToRearWheels((wheelTransform, wheelCollider) => {
+				wheelCollider.motorTorque = maxAccelTorque * this.inputAcceleration;
+			});
+
+		} else {
+			ApplyToRearWheels((wheelTransform, wheelCollider) => {
+				wheelCollider.motorTorque = 0;
+			});
+		}
+
+		
+		//Drag deceleration
+		if(inputAcceleration == 0){
+			ApplyToRearWheels((wheelTransform, wheelCollider) => wheelCollider.brakeTorque = decelerationSpeed);
+		} else {
+			ApplyToRearWheels((wheelTransform, wheelCollider) => wheelCollider.brakeTorque = 0);
+		}
+		
+		//Steering (pyhiscs)
+		float speedFactor = rigidbody.velocity.magnitude / lowestSteerAtSpeed;
+		float steerAngle = Mathf.Lerp(lowSpeedSteerAngle, highSpeedSteerAngle, speedFactor) * this.inputSteering;
+		ApplyToFrontWheels((wheelTransform, wheelCollider) => wheelCollider.steerAngle = steerAngle);
+		
+		//Handbrake
+		if(isHandBraking){
+			ApplyToFrontWheels((wheelTransform, wheelCollider) =>  wheelCollider.motorTorque = 0 );
+			ApplyToRearWheels((wheelTransform, wheelCollider) => wheelCollider.brakeTorque = maxBrakeTorque );
+		}
+	}
+
+
+
 	private void SyncWheelTransformsToColliderProperties(){
 
 		//Rotating wheel transform according to wheel collider physics
