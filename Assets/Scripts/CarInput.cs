@@ -14,6 +14,6 @@ public class CarInput : MonoBehaviour {
 	void Update () {
 		carController.ApplyAcceleration(Input.GetAxis(accelerationAxis));
 		carController.ApplySteering(Input.GetAxis(steeringAxis));
-		carController.SetHandbrake(Input.GetButton(handbrakeButton));
+		carController.IsHandbraking = Input.GetButton(handbrakeButton);
 	}
 }

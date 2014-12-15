@@ -63,7 +63,7 @@ public class CarController : MonoBehaviour {
 
 	private float inputAcceleration = 0;
 	private float inputSteering = 0;
-	private bool isHandBraking = false;
+	public bool IsHandbraking;
 
 
 	private delegate void WheelsFunction(Transform wheelTransform, WheelCollider wheelCollider);
@@ -108,8 +108,9 @@ public class CarController : MonoBehaviour {
 	}
 
 	public void SetHandbrake(bool handBrake){
-		this.isHandBraking = handBrake;
+		this.IsHandbraking = handBrake;
 	}
+
 
 	public void HardStop(){
 		ApplyToAllWheels((wheelTransform, wheelCollider) => {
@@ -199,8 +200,7 @@ public class CarController : MonoBehaviour {
 		ApplyToFrontWheels((wheelTransform, wheelCollider) => wheelCollider.steerAngle = steerAngle);
 		
 		//Handbrake
-		Debug.Log(string.Format("isHandbraking={0}", this.isHandBraking));
-		if(isHandBraking){
+		if(IsHandbraking){
 			ApplyToDrivetrainWheels((wheelTransform, wheelCollider) =>  wheelCollider.motorTorque = 0 );
 			ApplyToRearWheels((wheelTransform, wheelCollider) => wheelCollider.brakeTorque = maxBrakeTorque );
 		} else {
