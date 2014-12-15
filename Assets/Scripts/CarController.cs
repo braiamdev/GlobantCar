@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 public class CarController : MonoBehaviour {
 
+
 	//Wheel collider game objects
 	public WheelCollider wheelColliderFL;
 	public WheelCollider wheelColliderFR;
@@ -32,6 +33,20 @@ public class CarController : MonoBehaviour {
 	public float lowestSteerAtSpeed = 50; //the speed at witch highSpeedSteerAngle will be reached
 	public float lowSpeedSteerAngle = 15;
 	public float highSpeedSteerAngle = 1;
+
+
+	//Drivetrain
+	public DrivetrainType drivetrainType = DrivetrainType.FWD;
+
+	//Gears
+//	public float[] GearRatios;
+//	public int currentGear = 0;
+//	public float EngineRPM {
+//		get{
+//
+//				//EngineRPM = (FrontLeftWheel.rpm + FrontRightWheel.rpm)/2 * GearRatio[CurrentGear];
+//		}
+//	}
 
 
 
@@ -123,6 +138,33 @@ public class CarController : MonoBehaviour {
 		f(wheelTransformRR, wheelColliderRR);
 	}
 
+	private void ApplyToDrivetrainWheels(WheelsFunction f){
+		switch(drivetrainType){
+		case DrivetrainType.FWD:
+			ApplyToFrontWheels(f);
+			break;
+
+		case DrivetrainType.RWD:
+			ApplyToRearWheels(f);
+			break;
+
+		case DrivetrainType.AWD:
+			ApplyToAllWheels(f);
+			break;
+		}
+	}
+
+	private void ApplyToNonDrivetrainWheels(WheelsFunction f){
+		switch(drivetrainType){
+		case DrivetrainType.FWD:
+			ApplyToRearWheels(f);
+			break;
+			
+		case DrivetrainType.RWD:
+			ApplyToFrontWheels(f);
+			break;
+		}
+	}
 
 
 	private void UpdatePhysics(){
@@ -133,12 +175,12 @@ public class CarController : MonoBehaviour {
 
 		//Adding motor torque
 		if(currentSpeed >= -topReverseSpeed && currentSpeed <= topForwardSpeed){
-			ApplyToRearWheels((wheelTransform, wheelCollider) => {
+			ApplyToDrivetrainWheels((wheelTransform, wheelCollider) => {
 				wheelCollider.motorTorque = maxAccelTorque * this.inputAcceleration;
 			});
 
 		} else {
-			ApplyToRearWheels((wheelTransform, wheelCollider) => {
+			ApplyToDrivetrainWheels((wheelTransform, wheelCollider) => {
 				wheelCollider.motorTorque = 0;
 			});
 		}
@@ -146,9 +188,9 @@ public class CarController : MonoBehaviour {
 		
 		//Drag deceleration
 		if(inputAcceleration == 0){
-			ApplyToRearWheels((wheelTransform, wheelCollider) => wheelCollider.brakeTorque = decelerationSpeed);
+			ApplyToDrivetrainWheels((wheelTransform, wheelCollider) => wheelCollider.brakeTorque = decelerationSpeed);
 		} else {
-			ApplyToRearWheels((wheelTransform, wheelCollider) => wheelCollider.brakeTorque = 0);
+			ApplyToDrivetrainWheels((wheelTransform, wheelCollider) => wheelCollider.brakeTorque = 0);
 		}
 		
 		//Steering (pyhiscs)
@@ -157,9 +199,12 @@ public class CarController : MonoBehaviour {
 		ApplyToFrontWheels((wheelTransform, wheelCollider) => wheelCollider.steerAngle = steerAngle);
 		
 		//Handbrake
+		Debug.Log(string.Format("isHandbraking={0}", this.isHandBraking));
 		if(isHandBraking){
-			ApplyToFrontWheels((wheelTransform, wheelCollider) =>  wheelCollider.motorTorque = 0 );
+			ApplyToDrivetrainWheels((wheelTransform, wheelCollider) =>  wheelCollider.motorTorque = 0 );
 			ApplyToRearWheels((wheelTransform, wheelCollider) => wheelCollider.brakeTorque = maxBrakeTorque );
+		} else {
+			ApplyToRearWheels((wheelTransform, wheelCollider) => wheelCollider.brakeTorque = 0 );
 		}
 	}
 
