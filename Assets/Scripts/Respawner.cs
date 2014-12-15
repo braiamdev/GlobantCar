@@ -5,7 +5,7 @@ public class Respawner : MonoBehaviour
 {
 	public CarController carController;
 	public GameObject respawnPoint;
-	public string triggerButtonName = "Fire1";
+	public string triggerButtonName = "Respawn";
 
 	private bool respawning = false;
 

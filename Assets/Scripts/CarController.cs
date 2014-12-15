@@ -39,17 +39,15 @@ public class CarController : MonoBehaviour {
 	public DrivetrainType drivetrainType = DrivetrainType.FWD;
 
 	//Gears
-//	public float[] GearRatios;
-//	public int currentGear = 0;
-//	public float EngineRPM {
-//		get{
-//
-//				//EngineRPM = (FrontLeftWheel.rpm + FrontRightWheel.rpm)/2 * GearRatio[CurrentGear];
-//		}
-//	}
+	public float[] GearRatios;
+	public int currentGear = 0;
+	private float engineRPM = 0;
+	
+	public float maxEngineRPM = 3000f;
+	public float minEngineRPM = 1000f;
 
-
-
+	public float EngineTorque = 500f;
+	
 
 	//Max speeds
 	public float topForwardSpeed = 150;
@@ -118,6 +116,17 @@ public class CarController : MonoBehaviour {
 			wheelCollider.brakeTorque = 0;
 		});
 	}
+
+
+	public void ShiftGearUp(){
+		if(currentGear < GearRatios.Length - 1)
+			currentGear++;
+	}
+
+	public void ShiftGearDown(){
+		if(currentGear > 0)
+			currentGear--;
+	}
 	
 	//
 	// Delegate Methods
@@ -174,17 +183,33 @@ public class CarController : MonoBehaviour {
 		//bool thing = currentSpeed >= -topReverseSpeed && currentSpeed <= topForwardSpeed;
 		//Debug.Log(string.Format("currentSpeed={0}; {1}", currentSpeed, thing));
 
-		//Adding motor torque
-		if(currentSpeed >= -topReverseSpeed && currentSpeed <= topForwardSpeed){
-			ApplyToDrivetrainWheels((wheelTransform, wheelCollider) => {
-				wheelCollider.motorTorque = maxAccelTorque * this.inputAcceleration;
-			});
+		//Updating engine RPM
+		UpdateEngineRPM();
+		ShiftGears();
 
-		} else {
-			ApplyToDrivetrainWheels((wheelTransform, wheelCollider) => {
+		//Adding motor torque
+		ApplyToDrivetrainWheels((wheelTransform, wheelCollider) => {
+			if(engineRPM <= maxEngineRPM){
+				wheelCollider.motorTorque = (EngineTorque / GearRatios[currentGear]) * this.inputAcceleration;
+			} else {
 				wheelCollider.motorTorque = 0;
-			});
-		}
+			}
+		});
+
+		Debug.Log(string.Format("engineRPM={0}; currentGear={1}; currentSpeed={2}; motorTorque={3}", engineRPM, currentGear, currentSpeed, wheelColliderFL.motorTorque));
+
+		
+		//Adding motor torque
+//		if(currentSpeed >= -topReverseSpeed && currentSpeed <= topForwardSpeed){
+//			ApplyToDrivetrainWheels((wheelTransform, wheelCollider) => {
+//				wheelCollider.motorTorque = maxAccelTorque * this.inputAcceleration;
+//			});
+//
+//		} else {
+//			ApplyToDrivetrainWheels((wheelTransform, wheelCollider) => {
+//				wheelCollider.motorTorque = 0;
+//			});
+//		}
 
 		
 		//Drag deceleration
@@ -208,6 +233,15 @@ public class CarController : MonoBehaviour {
 		}
 	}
 
+	private void UpdateEngineRPM(){
+		//Calculating average drivetrain wheels rpm
+		float avgWheelsRPM = 0;
+		ApplyToDrivetrainWheels((wheelTransform, wheelCollider) => avgWheelsRPM += wheelCollider.rpm);
+		avgWheelsRPM = avgWheelsRPM / (drivetrainType == DrivetrainType.AWD ? 4 : 2);
+
+		//Calculating engine rpm
+		engineRPM = avgWheelsRPM * GearRatios[currentGear];
+	}
 
 
 	private void SyncWheelTransformsToColliderProperties(){
@@ -241,4 +275,22 @@ public class CarController : MonoBehaviour {
 		});
 	}
 
+
+	private void ShiftGears() {
+		if ( engineRPM >= maxEngineRPM ) {
+			for ( int i = 0; i < GearRatios.Length; i ++ ) {
+				if ( wheelColliderFL.rpm * GearRatios[i] < maxEngineRPM ) {
+					currentGear = i;
+					break;
+				}
+			}
+		} else if ( engineRPM <= minEngineRPM ) {
+			for (int i = GearRatios.Length-1; i >= 0; i--){
+				if ( wheelColliderFL.rpm * GearRatios[i] > minEngineRPM ) {
+					currentGear = i;
+					break;
+				}
+			}
+		}
+	}
 }
