@@ -25,8 +25,12 @@ public class CarController : MonoBehaviour {
 
 
 	//Physics
+	public float gravityMagnitude = 9.8f;
 	public Vector3 centerOfMassOffset = new Vector3(0f,-0.9f, 0f);
 	public float decelerationSpeed = 30;
+	public float stickyDistanceThreshold = 3.0f;
+	public string stickyTag = "Sticky";
+
 
 
 	//Steering
@@ -81,6 +85,7 @@ public class CarController : MonoBehaviour {
 
 	void FixedUpdate () {
 		UpdatePhysics();
+		StickyBehaviour();
 	}
 
 
@@ -272,6 +277,24 @@ public class CarController : MonoBehaviour {
 			}
 			
 			wheelTransform.position = wheelPos;
+		});
+	}
+
+
+	private void StickyBehaviour(){
+
+		ApplyToAllWheels((Transform wheelTransform, WheelCollider wheelCollider) => {
+
+			RaycastHit hit;
+
+			if(Physics.Raycast(wheelCollider.transform.position, - wheelCollider.transform.up, out hit, wheelCollider.radius + stickyDistanceThreshold)){
+				if(hit.transform.tag == stickyTag){
+					Physics.gravity = -gravityMagnitude * hit.normal;
+				}
+			} else {
+				Physics.gravity = Vector3.down * gravityMagnitude;
+			}
+
 		});
 	}
 
