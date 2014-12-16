@@ -7,6 +7,8 @@ public class DashboardGuiView : MonoBehaviour {
 
 	public DialIndicatorVO speedometer = new DialIndicatorVO();
 	public DialIndicatorVO tachometer = new DialIndicatorVO();
+	public Rect GearIndicatorRect;
+	public Texture2D GearIndicatorTexture;
 
 
 	//
@@ -14,10 +16,6 @@ public class DashboardGuiView : MonoBehaviour {
 	//
 	
 	void OnGUI(){
-
-		speedometer.value = Mathf.Abs(carController.currentSpeed / carController.topForwardSpeed);
-
-
 		DrawDashboard();
 	}
 
@@ -27,7 +25,29 @@ public class DashboardGuiView : MonoBehaviour {
 	//
 
 	private void DrawDashboard(){
+
+		//updating speedometer value and drawing it
+		speedometer.value = Mathf.Abs(carController.currentSpeed / carController.topForwardSpeed);
 		DrawDialIndicator(speedometer);
+
+		//updating tachometer value and drawing it
+		tachometer.value = Mathf.Abs(carController.EngineRPM / carController.maxEngineRPM);
+		DrawDialIndicator(tachometer);
+
+
+		//Drawing current gear number
+		Rect rect = new Rect(
+			Screen.width - GearIndicatorRect.width - GearIndicatorRect.x,
+			Screen.height - GearIndicatorRect.height - GearIndicatorRect.y,
+			GearIndicatorRect.width,
+			GearIndicatorRect.height
+		);
+		GUI.DrawTextureWithTexCoords(
+				rect,
+				GearIndicatorTexture,
+				new Rect(((float)carController.currentGear + 1)/10, 0, 0.1f, 1)
+		);
+
 	}
 
 	private void DrawDialIndicator(DialIndicatorVO dialIndicatorVO){
@@ -53,7 +73,7 @@ public class DashboardGuiView : MonoBehaviour {
 			);
 		GUIUtility.RotateAroundPivot(rotationAngle, pivotPoint);
 		GUI.DrawTexture(needleRect,	 dialIndicatorVO.needleTexture);
-
+		GUI.matrix = Matrix4x4.identity;
 	}
 
 }

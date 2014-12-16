@@ -41,7 +41,7 @@ public class CarController : MonoBehaviour {
 	//Gears
 	public float[] GearRatios;
 	public int currentGear = 0;
-	private float engineRPM = 0;
+	public float EngineRPM { get; private set;}
 	
 	public float maxEngineRPM = 3000f;
 	public float minEngineRPM = 1000f;
@@ -189,14 +189,14 @@ public class CarController : MonoBehaviour {
 
 		//Adding motor torque
 		ApplyToDrivetrainWheels((wheelTransform, wheelCollider) => {
-			if(engineRPM <= maxEngineRPM){
+			if(EngineRPM <= maxEngineRPM){
 				wheelCollider.motorTorque = (EngineTorque / GearRatios[currentGear]) * this.inputAcceleration;
 			} else {
 				wheelCollider.motorTorque = 0;
 			}
 		});
 
-		Debug.Log(string.Format("engineRPM={0}; currentGear={1}; currentSpeed={2}; motorTorque={3}", engineRPM, currentGear, currentSpeed, wheelColliderFL.motorTorque));
+		Debug.Log(string.Format("engineRPM={0}; currentGear={1}; currentSpeed={2}; motorTorque={3}", EngineRPM, currentGear, currentSpeed, wheelColliderFL.motorTorque));
 
 		
 		//Adding motor torque
@@ -240,7 +240,7 @@ public class CarController : MonoBehaviour {
 		avgWheelsRPM = avgWheelsRPM / (drivetrainType == DrivetrainType.AWD ? 4 : 2);
 
 		//Calculating engine rpm
-		engineRPM = avgWheelsRPM * GearRatios[currentGear];
+		EngineRPM = avgWheelsRPM * GearRatios[currentGear];
 	}
 
 
@@ -277,14 +277,14 @@ public class CarController : MonoBehaviour {
 
 
 	private void ShiftGears() {
-		if ( engineRPM >= maxEngineRPM ) {
+		if ( EngineRPM >= maxEngineRPM ) {
 			for ( int i = 0; i < GearRatios.Length; i ++ ) {
 				if ( wheelColliderFL.rpm * GearRatios[i] < maxEngineRPM ) {
 					currentGear = i;
 					break;
 				}
 			}
-		} else if ( engineRPM <= minEngineRPM ) {
+		} else if ( EngineRPM <= minEngineRPM ) {
 			for (int i = GearRatios.Length-1; i >= 0; i--){
 				if ( wheelColliderFL.rpm * GearRatios[i] > minEngineRPM ) {
 					currentGear = i;
