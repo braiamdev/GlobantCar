@@ -196,7 +196,7 @@ public class CarController : MonoBehaviour {
 			}
 		});
 
-		Debug.Log(string.Format("engineRPM={0}; currentGear={1}; currentSpeed={2}; motorTorque={3}", EngineRPM, currentGear, currentSpeed, wheelColliderFL.motorTorque));
+//		Debug.Log(string.Format("engineRPM={0}; currentGear={1}; currentSpeed={2}; motorTorque={3}", EngineRPM, currentGear, currentSpeed, wheelColliderFL.motorTorque));
 
 		
 		//Adding motor torque
