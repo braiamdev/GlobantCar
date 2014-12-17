@@ -57,32 +57,31 @@ public class CarCamera : MonoBehaviour {
 		//displacing target position above the car
 		targetPosition = targetPosition  + (transform.up * height);
 
-		Vector3 finalPosition = Vector3.Slerp(currentPosition, targetPosition, heightDamping * Time.deltaTime);
+		Vector3 finalPosition = targetPosition ;//Vector3.Slerp(currentPosition, targetPosition, heightDamping * Time.deltaTime);
 		transform.position = finalPosition;// targetPosition;
+
 
 
 		Quaternion currentRotation = transform.rotation;
 		Quaternion targetRotation = Quaternion.LookRotation(car.forward, car.up);
 
-		transform.rotation = Quaternion.Slerp(currentRotation, targetRotation, rotationDamping * Time.deltaTime);
+		transform.rotation = Quaternion.Lerp(currentRotation, targetRotation, rotationDamping * Time.deltaTime);
+		//transform.rotation = targetRotation ;//Quaternion.Slerp(currentRotation, targetRotation, rotationDamping * Time.deltaTime);
 
 
 
 	}
 
 	void FixedUpdate(){
-		Vector3 localVelocity = car.InverseTransformDirection(car.rigidbody.velocity);
-		if(localVelocity.z < reverseCamThreshold){
-			rotationVector.y = car.eulerAngles.y + 180;
-		} else {
-			rotationVector.y = car.eulerAngles.y;
-		}
-
-
-
-
-		float acc = car.rigidbody.velocity.magnitude;
-		camera.fieldOfView = defaultFOV + acc * zoomRatio;
+//		Vector3 localVelocity = car.InverseTransformDirection(car.rigidbody.velocity);
+//		if(localVelocity.z < reverseCamThreshold){
+//			rotationVector.y = car.eulerAngles.y + 180;
+//		} else {
+//			rotationVector.y = car.eulerAngles.y;
+//		}
+//
+//		float acc = car.rigidbody.velocity.magnitude;
+//		camera.fieldOfView = defaultFOV + acc * zoomRatio;
 	}
 
 	void Update(){
