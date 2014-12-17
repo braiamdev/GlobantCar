@@ -30,6 +30,7 @@ public class CarController : MonoBehaviour {
 	public float decelerationSpeed = 30;
 	public float stickyDistanceThreshold = 3.0f;
 	public string stickyTag = "Sticky";
+	public bool isSticky {get; private set;}
 
 
 
@@ -185,8 +186,6 @@ public class CarController : MonoBehaviour {
 	private void UpdatePhysics(){
 		
 		currentSpeed = Mathf.Round(2.0f * Mathf.PI * wheelColliderFL.radius * wheelColliderFL.rpm * 60 / 1000);
-		//bool thing = currentSpeed >= -topReverseSpeed && currentSpeed <= topForwardSpeed;
-		//Debug.Log(string.Format("currentSpeed={0}; {1}", currentSpeed, thing));
 
 		//Updating engine RPM
 		UpdateEngineRPM();
@@ -200,21 +199,6 @@ public class CarController : MonoBehaviour {
 				wheelCollider.motorTorque = 0;
 			}
 		});
-
-//		Debug.Log(string.Format("engineRPM={0}; currentGear={1}; currentSpeed={2}; motorTorque={3}", EngineRPM, currentGear, currentSpeed, wheelColliderFL.motorTorque));
-
-		
-		//Adding motor torque
-//		if(currentSpeed >= -topReverseSpeed && currentSpeed <= topForwardSpeed){
-//			ApplyToDrivetrainWheels((wheelTransform, wheelCollider) => {
-//				wheelCollider.motorTorque = maxAccelTorque * this.inputAcceleration;
-//			});
-//
-//		} else {
-//			ApplyToDrivetrainWheels((wheelTransform, wheelCollider) => {
-//				wheelCollider.motorTorque = 0;
-//			});
-//		}
 
 		
 		//Drag deceleration
@@ -290,9 +274,11 @@ public class CarController : MonoBehaviour {
 			if(Physics.Raycast(wheelCollider.transform.position, - wheelCollider.transform.up, out hit, wheelCollider.radius + stickyDistanceThreshold)){
 				if(hit.transform.tag == stickyTag){
 					Physics.gravity = -gravityMagnitude * hit.normal;
+					isSticky = true;
 				}
 			} else {
 				Physics.gravity = Vector3.down * gravityMagnitude;
+				isSticky = false;
 			}
 
 		});

@@ -17,7 +17,6 @@ public class Respawner : MonoBehaviour
 
 
 	private void respawn(){
-
 		carController.gameObject.transform.position = respawnPoint.transform.position;
 		carController.gameObject.transform.rotation = respawnPoint.transform.rotation;
 		carController.HardStop();
@@ -27,10 +26,7 @@ public class Respawner : MonoBehaviour
 	void FixedUpdate(){
 		if(respawning){
 			respawn();
-			//carController.rigidbody.isKinematic = false;
 			respawning = false;
-		} else {
-			//carController.rigidbody.isKinematic = true;
 		}
 	}
 }

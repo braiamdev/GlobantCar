@@ -17,90 +17,49 @@ public class CarCamera : MonoBehaviour {
 
 
 	private Vector3 rotationVector;
-	private Vector3 cameraOrientation;
 
-	void Start(){
-		cameraOrientation = Vector3.forward;
-	}
 
 	void LateUpdate () {
 
+		//Calculating car state
+		Vector3 localVelocity = car.InverseTransformDirection(car.rigidbody.velocity);
+		bool isReverseCam = localVelocity.z < reverseCamThreshold;
 
-		//Calculating camera position behind the car
-//		float currentYAngle = transform.eulerAngles.y;
-//		float targetYAngle = rotationVector.y;
-//		currentYAngle = Mathf.LerpAngle(currentYAngle, targetYAngle, rotationDamping * Time.deltaTime);
+		//Caching current camera rotation
+		Quaternion currentRotation = transform.rotation;
 
-
-		//Calculating camera position above the car
-		//float currentHeight = transform.position.y;
-		//float targetHeight = car.position.y + height;
-
-		//Calculating rotation
-		//Quaternion currentRotation = Quaternion.Euler(0,currentYAngle,0);
-
-
+		//Calculating target camera rotation
+		Quaternion targetRotation = Quaternion.LookRotation((car.forward * (isReverseCam? -1 : 1)), car.up);
+		
+		//Rotating camera
+		transform.rotation = Quaternion.Lerp(currentRotation, targetRotation, rotationDamping * Time.deltaTime);
+		
 
 
-		//targetPosition = Mathf.Lerp();
-
-
-		Vector3 currentPosition = transform.position;
 
 		//Positioning target position in the center of the car
 		Vector3 targetPosition = car.position;
 
-		//displacing  target position behind the car
-		targetPosition = targetPosition - (transform.forward * distance);
-
+		//displacing target position behind (or in front of) the car
+		targetPosition = targetPosition - (transform.forward * distance );
 
 		//displacing target position above the car
 		targetPosition = targetPosition  + (transform.up * height);
 
-		Vector3 finalPosition = targetPosition ;//Vector3.Slerp(currentPosition, targetPosition, heightDamping * Time.deltaTime);
-		transform.position = finalPosition;// targetPosition;
+
+		//Moving the camera position to the target position
+		transform.position = targetPosition;
 
 
-
-		Quaternion currentRotation = transform.rotation;
-		Quaternion targetRotation = Quaternion.LookRotation(car.forward, car.up);
-
-		transform.rotation = Quaternion.Lerp(currentRotation, targetRotation, rotationDamping * Time.deltaTime);
-		//transform.rotation = targetRotation ;//Quaternion.Slerp(currentRotation, targetRotation, rotationDamping * Time.deltaTime);
 
 
 
 	}
+
 
 	void FixedUpdate(){
-//		Vector3 localVelocity = car.InverseTransformDirection(car.rigidbody.velocity);
-//		if(localVelocity.z < reverseCamThreshold){
-//			rotationVector.y = car.eulerAngles.y + 180;
-//		} else {
-//			rotationVector.y = car.eulerAngles.y;
-//		}
-//
-//		float acc = car.rigidbody.velocity.magnitude;
-//		camera.fieldOfView = defaultFOV + acc * zoomRatio;
+		float acc = car.rigidbody.velocity.magnitude;
+		camera.fieldOfView = defaultFOV + acc * zoomRatio;
 	}
 
-	void Update(){
-		if(Input.GetButtonDown("NextCam")){
-			NextCam();
-		}
-	}
-
-	void NextCam(){
-		if(cameraOrientation == Vector3.forward)
-			cameraOrientation = Vector3.left;
-		else if(cameraOrientation == Vector3.left)
-			cameraOrientation = Vector3.back;
-		else if(cameraOrientation == Vector3.back)
-			cameraOrientation = Vector3.right;
-		else if(cameraOrientation == Vector3.right)
-			cameraOrientation = Vector3.forward;
-
-		
-
-	}
 }
